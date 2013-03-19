@@ -13,6 +13,4 @@ itertools.combinations(range(width+height), width)
 3.) use build_route to construct the routes based on 'r' steps indexes
 
 4.) Verification with sample input/output: 
-	run batch_with_sum and batch_with_distance, and I found batch_with_sum gives me the result aligns to the sample output given out by the question. 
-
-	Actually batch_with_distance makes more sense to me, because I thought the hex number stands for the altitude of the terrain. 
+	run batch_with_sum and batch_with_distance, and I found batch_with_sum gives me the result aligns to the sample output given out by the question. Actually batch_with_distance makes more sense to me, because I thought the hex number stands for the altitude of the terrain. 
