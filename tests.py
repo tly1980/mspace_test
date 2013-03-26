@@ -41,9 +41,31 @@ class TestRoutePlanner(unittest.TestCase):
                                     0xd1d, 0xd03,  # d, r
                                     0xde3, 0x4d2]) # r, d
 
-    def test_batch_with_sum(self):
-        routes = route_planner.all_routes(5, 5)
-        ret = route_planner.batch_with_sum(routes,
-            dataset=route_planner.sample_input)
+    def test_best_route(self):
+        w, r = route_planner.best_route(route_planner.sample_input)
+        self.assertEqual(w.route, route_planner.sample_output)
 
-        self.assertEqual(ret[0][1], route_planner.sample_output)
+        w, r = route_planner.best_route([
+            [0, 0, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0, 0]
+        ])
+        self.assertEqual(r, 0)
+        self.assertEqual(w.route, ['r', 'd', 'r', 'r', 'r', 'r'])
+
+        w, r = route_planner.best_route([
+            [0, 0, 1, 1, 1, 1],
+            [1, 0, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0, 0]
+        ])
+        self.assertEqual(r, 0)
+        self.assertEqual(w.route, ['r', 'd', 'd', 'r', 'r', 'r', 'r'])
+
+
+        w, r = route_planner.best_route([
+            [0, 0, 1, 1, 1, 1],
+            [1, 0, 0, 1, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 1, 0, 0, 0]
+        ])
+        self.assertEqual(r, 0)
+        self.assertEqual(w.route, ['r', 'd', 'r', 'd', 'r', 'd', 'r', 'r'])

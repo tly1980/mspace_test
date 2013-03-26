@@ -1,5 +1,6 @@
 import itertools
 
+
 sample_input = [
     [0x46B, 0xE59,  0xEA, 0xC1F, 0x45E, 0x63],
     [0x899, 0xFFF, 0x926, 0x7AD, 0xC4E, 0xFFF],
@@ -13,31 +14,48 @@ sample_output = [
    'r', 'r', 'd', 'd', 'r', 'd', 'd', 'r', 'r', 'd'
 ]
 
+sample_input2 = [
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    [0, 0, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+    [22, 0, 0, 25, 26, 27, 28, 29, 30, 31, 32],
+    [33, 34, 0, 0, 37, 38, 39, 40, 41, 42, 43],
+    [44, 45, 46, 0, 0, 49, 50, 51, 52, 53, 54],
+    [55, 56, 57, 58, 0, 0, 61, 62, 63, 64, 65],
+    [66, 67, 68, 69, 70, 0, 0, 73, 74, 75, 76],
+    [77, 78, 79, 80, 81, 82, 0, 0, 85, 86, 87],
+    [88, 89, 90, 91, 92, 93, 94, 0, 0, 97, 98],
+    [99, 100, 101, 102, 103, 104, 105, 106, 0, 0, 109],
+    [110, 111, 112, 113, 114, 115, 116, 117, 118, 0, 0]
+ ]
 
-def build_route(right_indexes, width=5, height=5):
-    ret = ['d'] * (width + height)
-    for pos in right_indexes:
+
+def build_route(wstep_indexes, w_maxstep=5, h_maxstep=5):
+    ret = ['d'] * (w_maxstep + h_maxstep)
+    for pos in wstep_indexes:
         ret[pos] = 'r'
     return ret
 
 
-def all_routes(width=5, height=5):
-    right_indexes_list = itertools.combinations(
-        range(width+height), width)
+def best_route(dataset, w_maxstep=0, h_maxstep=0, proc_fun=sum):
+    last = None
 
-    ret = []
+    if not w_maxstep:
+        w_maxstep = len(dataset[0]) - 1
 
-    for right_indexes in right_indexes_list:
-        ret.append(build_route(right_indexes))
+    if not h_maxstep:
+        h_maxstep = len(dataset) - 1
 
-    return ret
+    for wstep_indexes in itertools.combinations(xrange(w_maxstep + h_maxstep), w_maxstep):
+        w = Walker(build_route(wstep_indexes, w_maxstep=w_maxstep, h_maxstep=h_maxstep), dataset)
+        w.collect()
+        r = proc_fun(w.series)
 
+        if not last:
+            last = (w, r)
+        else:
+            last = min(last, (w, r), key=lambda a: a[1])
 
-def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return itertools.izip(a, b)
+    return last
 
 
 class Walker:
@@ -52,12 +70,14 @@ class Walker:
         self.result = 0
         x, y = 0, 0
         a = self.dataset[y][x]
+
         self.series.append(a)
         for step in self.route:
             if step == 'd':
                 y += 1
             else:
                 x += 1
+
             b = self.dataset[y][x]
             a = b
             self.series.append(b)
@@ -66,34 +86,40 @@ class Walker:
         self.result = serires_handler(self.series)
 
 
-def batch_with_distance(routes=[], dataset=sample_input):
+def benchmark():
+    r1, diff1 = memusage_before_n_after(best_route, sample_input)
+    r2, diff2 = memusage_before_n_after(best_route, sample_input2)
+
+    print r1[1], r1[0].route
+    print r2[1], r2[0].route
+
+
+def sample_matrix(width, height, dataset=[]):
+    start = 0
+    end = width
     ret = []
-    if not routes:
-        routes = all_routes()
+    if not dataset:
+        dataset = range(width * height)
+    while end <= len(dataset):
+        ret.append(dataset[start:end])
+        start += width
+        end += width
 
-    def distance(series):
-        total = 0
-        for a, b in pairwise(series):
-            total += abs(a - b)
-        return total
-
-    for r in routes:
-        w = Walker(r, dataset)
-        w.collect()
-        w.run(distance)
-        ret.append((w.result, w.route))
-
-    return sorted(ret, key=lambda tup: tup[0])
+    return ret
 
 
-def batch_with_sum(routes=[], dataset=sample_input):
-    ret = []
-    if not routes:
-        routes = all_routes()
+def memusage_before_n_after(fun, *args, **kwargs):
+    from pympler import muppy
+    from pympler import summary
+    from datetime import datetime
 
-    for r in routes:
-        w = Walker(r, dataset)
-        w.collect()
-        ret.append((sum(w.series), w.route))
+    before = summary.summarize(muppy.get_objects())
+    before_time = datetime.now()
+    fun_ret = fun(*args, **kwargs)
+    after_time = datetime.now()
+    after = summary.summarize(muppy.get_objects())
+    diff = summary.get_diff(before, after)
+    print "execution time: ", after_time - before_time
+    summary.print_(diff)
 
-    return sorted(ret, key=lambda tup: tup[0])
+    return fun_ret, diff
